@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"github.com/joho/godotenv"
+	"log"
 	"os"
 )
 
@@ -18,19 +20,20 @@ var (
 )
 
 func LoadConfig() *Config {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Warning: No .env file found, using system environment variables.")
+	}
 	cfg = Config{
 		MongoUser:     getEnv("MONGO_USER", "cofeeStaff"),
 		MongoPassword: getEnv("MONGO_PASSWORD", "pass123"),
-		MongoHost:     getEnv("MONGO_HOST", "localhost"),
-		MongoPort:     getEnv("MONGO_PORT", "27017"),
-		MongoDatabase: getEnv("MONGO_DATABASE", "cofee-shop"),
 	}
 	return &cfg
 }
 
 func (c *Config) MakeConnectionString() string {
-	return fmt.Sprintf("mongodb://%s:%s@%s:%s/%s",
-		c.MongoUser, c.MongoPassword, c.MongoHost, c.MongoPort, c.MongoDatabase)
+	return fmt.Sprintf("mongodb+srv://%s:%s@cluster0.whhpn.mongodb.net/",
+		c.MongoUser, c.MongoPassword)
 }
 
 func getEnv(key, fallback string) string {

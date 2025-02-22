@@ -4,9 +4,10 @@ import (
 	"cofee-shop-mongo/internal/handlers"
 	"cofee-shop-mongo/internal/repository"
 	"cofee-shop-mongo/internal/service"
-	"go.mongodb.org/mongo-driver/v2/mongo"
 	"log/slog"
 	"net/http"
+
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type APIServer struct {

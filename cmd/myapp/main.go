@@ -4,6 +4,7 @@ import (
 	"cofee-shop-mongo/pkg/config"
 	"cofee-shop-mongo/pkg/lib/logger"
 	"context"
+	"fmt"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
@@ -16,6 +17,7 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 	ConnectionString := cfg.MakeConnectionString()
+	fmt.Println("Connection String: ", ConnectionString)
 	logger := logger.SetupPrettySlog(os.Stdout)
 
 	client := mongoConnect(ConnectionString)

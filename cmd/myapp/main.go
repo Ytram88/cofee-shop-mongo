@@ -17,14 +17,14 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 	ConnectionString := cfg.MakeConnectionString()
-	fmt.Println("Connection String: ", ConnectionString)
 	logger := logger.SetupPrettySlog(os.Stdout)
 
 	client := mongoConnect(ConnectionString)
 	defer mongoDisconnect(client)
 
 	mux := http.NewServeMux()
-	server := NewAPIServer("localhost:8000", mux, client.Database("cofee-shop"), logger)
+	address := fmt.Sprintf("0.0.0.0:%s", cfg.Port)
+	server := NewAPIServer(address, mux, client.Database("cofee-shop"), logger)
 	server.Run()
 }
 

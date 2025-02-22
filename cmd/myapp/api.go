@@ -42,6 +42,11 @@ func (as *APIServer) Run() {
 	orderHandler := handlers.NewOrderHandler(orderService, as.logger)
 	orderHandler.RegisterEndpoints(as.mux)
 
+	reportRepository := repository.NewReportRepository(as.db)
+	reportService := service.NewReportService(reportRepository)
+	reportHandler := handlers.NewReportHandler(reportService)
+	reportHandler.RegisterEndpoints(as.mux)
+
 	mWChain := handlers.NewMiddleWareChain(handlers.Recovery, handlers.ContextMW)
 
 	as.logger.Info("starting server", slog.String("address", as.address))

@@ -35,8 +35,8 @@ func (h *MenuHandler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("GET /menu/{id}", h.getMenuItemById)
 	mux.HandleFunc("GET /menu/{id}/", h.getMenuItemById)
 
-	mux.HandleFunc("PUT /menu/{id}", h.updateMenuItemByIdById)
-	mux.HandleFunc("PUT /menu/{id}/", h.updateMenuItemByIdById)
+	mux.HandleFunc("PUT /menu/{id}", h.updateMenuItemById)
+	mux.HandleFunc("PUT /menu/{id}/", h.updateMenuItemById)
 
 	mux.HandleFunc("DELETE /menu/{id}", h.deleteMenuItemById)
 	mux.HandleFunc("DELETE /menu/{id}/", h.deleteMenuItemById)
@@ -75,7 +75,7 @@ func (h *MenuHandler) getMenuItemById(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.WriteJSON(w, http.StatusOK, item)
 }
-func (h *MenuHandler) updateMenuItemByIdById(w http.ResponseWriter, r *http.Request) {
+func (h *MenuHandler) updateMenuItemById(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var updatedItem models.MenuItem
 

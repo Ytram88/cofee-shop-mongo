@@ -10,9 +10,7 @@ import (
 type Config struct {
 	MongoUser     string
 	MongoPassword string
-	MongoHost     string
-	MongoPort     string
-	MongoDatabase string
+	Port          string
 }
 
 var (
@@ -27,6 +25,7 @@ func LoadConfig() *Config {
 	cfg = Config{
 		MongoUser:     getEnv("MONGO_USER", "cofeeStaff"),
 		MongoPassword: getEnv("MONGO_PASSWORD", "pass123"),
+		Port:          getEnv("PORT", "8080"),
 	}
 	return &cfg
 }

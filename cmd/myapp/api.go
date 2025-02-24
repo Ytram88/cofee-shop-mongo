@@ -1,9 +1,12 @@
 package main
 
 import (
+	"cofee-shop-mongo/internal/config"
 	"cofee-shop-mongo/internal/handlers"
+	"cofee-shop-mongo/internal/handlers/middleware"
 	"cofee-shop-mongo/internal/repository"
 	"cofee-shop-mongo/internal/service"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -11,18 +14,18 @@ import (
 )
 
 type APIServer struct {
-	address string
-	mux     *http.ServeMux
-	db      *mongo.Database
-	logger  *slog.Logger
+	config *config.Config
+	mux    *http.ServeMux
+	db     *mongo.Database
+	logger *slog.Logger
 }
 
-func NewAPIServer(address string, mux *http.ServeMux, db *mongo.Database, logger *slog.Logger) *APIServer {
+func NewAPIServer(config *config.Config, mux *http.ServeMux, db *mongo.Database, logger *slog.Logger) *APIServer {
 	return &APIServer{
-		address: address,
-		mux:     mux,
-		db:      db,
-		logger:  logger,
+		config: config,
+		mux:    mux,
+		db:     db,
+		logger: logger,
 	}
 }
 
@@ -38,18 +41,28 @@ func (as *APIServer) Run() {
 	menuHandler.RegisterEndpoints(as.mux)
 
 	orderRepository := repository.NewOrderRepository(as.db)
-	orderService := service.NewOrderService(orderRepository, menuService, inventoryService)
+	orderService := service.NewOrderService(orderRepository, menuService, inventoryService) //order needs access to menu and inventory so you need to pass repo or service
 	orderHandler := handlers.NewOrderHandler(orderService, as.logger)
 	orderHandler.RegisterEndpoints(as.mux)
+
+	userRepository := repository.NewUserRepository(as.db)
+	userService := service.NewUserService(userRepository)
+	userHandler := handlers.NewUserHandler(userService, as.logger)
+	userHandler.RegisterEndpoints(as.mux)
 
 	reportRepository := repository.NewReportRepository(as.db)
 	reportService := service.NewReportService(reportRepository)
 	reportHandler := handlers.NewReportHandler(reportService)
 	reportHandler.RegisterEndpoints(as.mux)
 
-	mWChain := handlers.NewMiddleWareChain(handlers.Recovery, handlers.ContextMW)
+	authService := service.NewAuthService(userRepository, as.config.JWTConfig)
+	authHandler := handlers.NewAuthHandler(authService)
+	authHandler.RegisterEndpoints(as.mux)
 
-	as.logger.Info("starting server", slog.String("address", as.address))
-	http.ListenAndServe(as.address, mWChain(as.mux))
+	mWChain := middleware.NewMiddleWareChain(middleware.Recovery, middleware.ContextMW)
+
+	address := fmt.Sprintf("0.0.0.0:%s", as.config.Port)
+	as.logger.Info("starting server", slog.String("address", address))
+	http.ListenAndServe(address, mWChain(as.mux))
 
 }

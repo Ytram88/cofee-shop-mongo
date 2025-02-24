@@ -1,16 +1,21 @@
 package models
 
-import (
-	"time"
-)
-
 type User struct {
-	UserID     int    `json:"customer_id"`
-	Username   string `json:"username"`
-	Password   string
-	IsAdmin    bool      `json:"is_admin"`
-	Age        int       `json:"age"`
-	Sex        []uint8   `json:"sex"`
-	FirstOrder time.Time `json:"first_order"`
-	//Allergens  pq.StringArray `json:"allergens"`
+	UserID   string `json:"user_id" bson:"user_id"`
+	Username string `json:"username" bson:"username"`
+	Email    string `json:"email" bson:"email"`
+	Password string `json:"password" bson:"password"`
+	Role     string `json:"role" bson:"role"`
+}
+
+type RegisterUserPayload struct {
+	UserID   string `json:"user_id" bson:"user_id"`
+	Username string `json:"username"`
+	Email    string `json:"email" bson:"email"`
+	Password string `json:"password"`
+}
+
+type UserLoginPayload struct {
+	Email    string `json:"username" bson:"username"`
+	Password string `json:"password" bson:"password"`
 }

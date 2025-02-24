@@ -1,10 +1,9 @@
 package main
 
 import (
-	"cofee-shop-mongo/pkg/config"
+	"cofee-shop-mongo/internal/config"
 	"cofee-shop-mongo/pkg/lib/logger"
 	"context"
-	"fmt"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
@@ -23,8 +22,8 @@ func main() {
 	defer mongoDisconnect(client)
 
 	mux := http.NewServeMux()
-	address := fmt.Sprintf("0.0.0.0:%s", cfg.Port)
-	server := NewAPIServer(address, mux, client.Database("cofee-shop"), logger)
+
+	server := NewAPIServer(cfg, mux, client.Database("cofee-shop"), logger)
 	server.Run()
 }
 
@@ -48,3 +47,7 @@ func mongoDisconnect(client *mongo.Client) {
 		log.Fatal("Couldn't disconnect from MongoDB")
 	}
 }
+
+// notes:
+// consistency in signature
+// better error handling and error storage

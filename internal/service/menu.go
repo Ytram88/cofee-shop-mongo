@@ -9,7 +9,7 @@ import (
 type MenuRepository interface {
 	CreateMenuItem(ctx context.Context, item models.MenuItem) (string, error)
 	GetAllMenuItems(ctx context.Context) ([]models.MenuItem, error)
-	GetMenuItemById(ctx context.Context, id string) (models.MenuItem, error)
+	GetMenuItemById(ctx context.Context, MenuId string) (models.MenuItem, error)
 	DeleteMenuItemById(ctx context.Context, id string) error
 	UpdateMenuItemById(ctx context.Context, id string, item models.MenuItem) error
 }

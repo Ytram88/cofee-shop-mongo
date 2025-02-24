@@ -6,7 +6,6 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"time"
 )
 
 type OrderService interface {
@@ -53,9 +52,6 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 	}
-
-	order.Status = "Open"
-	order.CreatedAt = time.Now().Format(time.DateTime)
 
 	_, err = h.Service.CreateOrder(r.Context(), order)
 	if err != nil {

@@ -32,26 +32,23 @@ cd hot-coffee
 go mod tidy
 ```
 
-### Setup Environment Variables
-Setup the database for use 
-Create three collections
-```
-Inventory
-Menu
-Orders
-```
-
 Create a `.env` file:
 
 ```env
-MONGO_URI=mongodb://localhost:27017
-DB_NAME=set the name of the DB
+MONGO_USER="cofeeStaff"
+MONGO_PASSWORD="cofeeAdmin"
 ```
 
 ### Run Application
 
 ```sh
-go run main.go
+go run ./cmd/nyapp/.
+```
+
+or if you dont have go installed, use binary in the repository
+
+```sh
+./app
 ```
 
 ---
@@ -120,5 +117,11 @@ go run main.go
 | `PUT`    | `/inventory/{id}` | Update an inventory item |
 | `DELETE` | `/inventory/{id}` | Delete an inventory item |
 
+### **Aggregation**
+
+| Method   | Endpoint           | Description            |
+| -------- | ----------------- | ---------------------- |
+| `GET`   | `/reports/total-sales`      |  Get the total sales amount |
+| `GET`    | `/reports/popular-items`  | Get a list of popular menu items |
 ---
 

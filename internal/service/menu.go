@@ -3,7 +3,7 @@ package service
 import (
 	"cofee-shop-mongo/models"
 	"context"
-	"errors"
+	"fmt"
 )
 
 type MenuRepository interface {
@@ -23,34 +23,54 @@ func NewMenuService(repo MenuRepository) *MenuService {
 }
 
 func (s *MenuService) CreateMenuItem(ctx context.Context, item models.MenuItem) (string, error) {
-	if item.ProductId == "" {
-		return "", errors.New("ProductId is empty")
+	const op = "service.CreateMenuItem"
+	id, err := s.Repo.CreateMenuItem(ctx, item)
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
 	}
-	if item.Name == "" {
-		return "", errors.New("Name is empty")
-	}
-	if item.Ingredients == nil {
-		return "", errors.New("Ingredients is empty")
-	}
-	return s.Repo.CreateMenuItem(ctx, item)
+	return id, nil
 }
 
 func (s *MenuService) GetAllMenuItems(ctx context.Context) ([]models.MenuItem, error) {
-	return s.Repo.GetAllMenuItems(ctx)
+	const op = "service.GetAllMenuItems"
+
+	items, err := s.Repo.GetAllMenuItems(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return items, nil
 }
 
 func (s *MenuService) GetMenuItemById(ctx context.Context, id string) (models.MenuItem, error) {
-	return s.Repo.GetMenuItemById(ctx, id)
+	const op = "service.GetMenuItemById"
+
+	item, err := s.Repo.GetMenuItemById(ctx, id)
+	if err != nil {
+		return models.MenuItem{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return item, nil
 }
 
 func (s *MenuService) DeleteMenuItemById(ctx context.Context, id string) error {
-	return s.Repo.DeleteMenuItemById(ctx, id)
+	const op = "service.DeleteMenuItemById"
+
+	err := s.Repo.DeleteMenuItemById(ctx, id)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }
 
 func (s *MenuService) UpdateMenuItemById(ctx context.Context, id string, item models.MenuItem) error {
+	const op = "service.UpdateMenuItemById"
 	item.ProductId = id
-	if item.Ingredients == nil {
-		return errors.New("Ingredients is empty")
+	err := s.Repo.UpdateMenuItemById(ctx, id, item)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
 	}
-	return s.Repo.UpdateMenuItemById(ctx, id, item)
+
+	return nil
 }

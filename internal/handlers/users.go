@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"cofee-shop-mongo/internal/auth"
 	"cofee-shop-mongo/internal/utils"
 	"cofee-shop-mongo/models"
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 )
@@ -26,34 +28,48 @@ func NewUserHandler(service UserService, logger *slog.Logger) *UserHandler {
 }
 
 func (h *UserHandler) RegisterEndpoints(mux *http.ServeMux) {
-	mux.HandleFunc("POST /users", h.createUser)
-	mux.HandleFunc("GET /users", h.getAllUsers)
-	mux.HandleFunc("GET /users/{id}", h.getUserById)
-	mux.HandleFunc("PUT /users/{id}", h.updateUserById)
-	mux.HandleFunc("DELETE /users/{id}", h.deleteUserById)
+	mux.HandleFunc("POST /users", auth.WithJWTAuth(models.AdminAccess, h.createUser))
+	mux.HandleFunc("POST /users/", auth.WithJWTAuth(models.AdminAccess, h.createUser))
+
+	mux.HandleFunc("GET /users", auth.WithJWTAuth(models.AdminAccess, h.getAllUsers))
+	mux.HandleFunc("GET /users/", auth.WithJWTAuth(models.AdminAccess, h.getAllUsers))
+
+	mux.HandleFunc("GET /users/{id}", auth.WithJWTAuth(models.AdminAccess, h.getUserById))
+	mux.HandleFunc("GET /users/{id}/", auth.WithJWTAuth(models.AdminAccess, h.getUserById))
+
+	mux.HandleFunc("PUT /users/{id}", auth.WithJWTAuth(models.AdminAccess, h.updateUserById))
+	mux.HandleFunc("PUT /users/{id}/", auth.WithJWTAuth(models.AdminAccess, h.updateUserById))
+	
+	mux.HandleFunc("DELETE /users/{id}", auth.WithJWTAuth(models.AdminAccess, h.deleteUserById))
+	mux.HandleFunc("DELETE /users/{id}/", auth.WithJWTAuth(models.AdminAccess, h.deleteUserById))
 }
 
 func (h *UserHandler) createUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
 
-	err := utils.ParseJSON(r, &user)
-	if err != nil {
+	if err := utils.ParseJSON(r, &user); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, errors.New("invalid request payload"))
+		return
+	}
+
+	if err := validateUser(user); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	_, err = h.Service.CreateUser(r.Context(), user)
+	id, err := h.Service.CreateUser(r.Context(), user)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
+		utils.WriteError(w, http.StatusInternalServerError, errors.New("could not create user, please try again later"))
 		return
 	}
-	utils.WriteJSON(w, http.StatusCreated, map[string]string{"message": "User created successfully"})
+
+	utils.WriteJSON(w, http.StatusCreated, map[string]string{"message": "User created successfully", "id": id})
 }
 
 func (h *UserHandler) getAllUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := h.Service.GetAllUsers(r.Context())
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
+		utils.WriteError(w, http.StatusInternalServerError, errors.New("could not retrieve users, please try again later"))
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, users)
@@ -63,7 +79,7 @@ func (h *UserHandler) getUserById(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	user, err := h.Service.GetUserById(r.Context(), id)
 	if err != nil {
-		utils.WriteError(w, http.StatusNotFound, err)
+		utils.WriteError(w, http.StatusNotFound, errors.New("user not found"))
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, user)
@@ -73,26 +89,45 @@ func (h *UserHandler) updateUserById(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var updatedUser models.User
 
-	err := utils.ParseJSON(r, &updatedUser)
-	if err != nil {
+	if err := utils.ParseJSON(r, &updatedUser); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, errors.New("invalid request payload"))
+		return
+	}
+
+	if err := validateUser(updatedUser); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	err = h.Service.UpdateUserById(r.Context(), id, updatedUser)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
+	if err := h.Service.UpdateUserById(r.Context(), id, updatedUser); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, errors.New("could not update user, please try again later"))
 		return
 	}
+
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "User updated successfully"})
 }
 
 func (h *UserHandler) deleteUserById(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	err := h.Service.DeleteUserById(r.Context(), id)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
+	if err := h.Service.DeleteUserById(r.Context(), id); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, errors.New("could not delete user, please try again later"))
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "User deleted successfully"})
+}
+
+func validateUser(user models.User) error {
+	if user.UserID == "" {
+		return errors.New("user ID cannot be empty")
+	}
+	if user.Username == "" {
+		return errors.New("username cannot be empty")
+	}
+	if user.Email == "" {
+		return errors.New("email cannot be empty")
+	}
+	if user.Password == "" {
+		return errors.New("password cannot be empty")
+	}
+	return nil
 }

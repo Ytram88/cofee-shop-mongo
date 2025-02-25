@@ -86,6 +86,13 @@ or if you dont have go installed, use binary in the repository
 
 ## API Endpoints
 
+### **Authorization**
+
+| Method | Endpoint    | Description                  |
+|--------|-------------|------------------------------|
+| `POST` | `/register` | Creating a new account in db |
+| `POST`  | `/login`    | Getting a JWT token          |
+
 ### **Orders**
 
 | Method   | Endpoint            | Description        |

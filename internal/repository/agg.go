@@ -17,6 +17,7 @@ func NewReportRepository(db *mongo.Database) *ReportRepository {
 }
 
 func (r *ReportRepository) GetTotalSales(ctx context.Context) (float64, error) {
+	const op = "repository.GetTotalSales"
 	collection := r.db.Collection("orders")
 
 	pipeline := []bson.M{
@@ -48,24 +49,27 @@ func (r *ReportRepository) GetTotalSales(ctx context.Context) (float64, error) {
 
 	cursor, err := collection.Aggregate(ctx, pipeline)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 	defer cursor.Close(ctx)
 
 	var result struct {
-		TotalSales float64 `bson:"total_sales" json:"total_sales"`
+		TotalSales float64 `bson:"total_sales"`
 	}
+
 	if cursor.Next(ctx) {
 		if err := cursor.Decode(&result); err != nil {
-			return 0, err
+			return 0, fmt.Errorf("%s: %w", op, err)
 		}
+	} else {
+		return 0, fmt.Errorf("%s: %w", op, ErrNotFound)
 	}
 
 	return result.TotalSales, nil
 }
 
-// GetPopularItems finds the most ordered menu items
 func (r *ReportRepository) GetPopularItems(ctx context.Context) ([]models.PopularItem, error) {
+	const op = "repository.GetPopularItems"
 	collection := r.db.Collection("orders")
 
 	pipeline := []bson.M{
@@ -81,7 +85,7 @@ func (r *ReportRepository) GetPopularItems(ctx context.Context) ([]models.Popula
 
 	cursor, err := collection.Aggregate(ctx, pipeline)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	defer cursor.Close(ctx)
 
@@ -89,11 +93,14 @@ func (r *ReportRepository) GetPopularItems(ctx context.Context) ([]models.Popula
 	for cursor.Next(ctx) {
 		var item models.PopularItem
 		if err := cursor.Decode(&item); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: %w", op, err)
 		}
 		popularItems = append(popularItems, item)
 	}
 
-	fmt.Println(popularItems)
+	if len(popularItems) == 0 {
+		return nil, fmt.Errorf("%s: %w", op, ErrNotFound)
+	}
+
 	return popularItems, nil
 }

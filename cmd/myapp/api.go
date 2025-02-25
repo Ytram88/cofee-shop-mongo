@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cofee-shop-mongo/internal/auth"
 	"cofee-shop-mongo/internal/config"
 	"cofee-shop-mongo/internal/handlers"
 	"cofee-shop-mongo/internal/handlers/middleware"
@@ -55,8 +56,9 @@ func (as *APIServer) Run() {
 	reportHandler := handlers.NewReportHandler(reportService)
 	reportHandler.RegisterEndpoints(as.mux)
 
+	auth.SetSecret(as.config.JWTConfig.JWTSecret)
 	authService := service.NewAuthService(userRepository, as.config.JWTConfig)
-	authHandler := handlers.NewAuthHandler(authService)
+	authHandler := handlers.NewAuthHandler(authService, as.logger)
 	authHandler.RegisterEndpoints(as.mux)
 
 	mWChain := middleware.NewMiddleWareChain(middleware.Recovery, middleware.ContextMW)

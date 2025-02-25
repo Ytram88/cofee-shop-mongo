@@ -3,7 +3,7 @@ package service
 import (
 	"cofee-shop-mongo/models"
 	"context"
-	"errors"
+	"fmt"
 	"time"
 )
 
@@ -26,95 +26,84 @@ func NewOrderService(OrderRepo OrderRepository, MenuService *MenuService, Invent
 }
 
 func (s *OrderService) CreateOrder(ctx context.Context, order models.Order) (string, error) {
-	if order.CustomerName == "" {
-		return "", errors.New("customer name is required")
-	}
-	if len(order.Items) == 0 {
-		return "", errors.New("order must have at least one item")
-	}
-
-	requiredIngredients := make(map[string]float64)
-	for _, item := range order.Items {
-		if item.Quantity <= 0 {
-			return "", errors.New("invalid item quantity")
-		}
-
-		menuItem, err := s.MenuService.GetMenuItemById(ctx, item.ProductID)
-		if err != nil {
-			return "", errors.New("menu item not found: " + item.ProductID)
-		}
-
-		for _, ingredient := range menuItem.Ingredients {
-			requiredIngredients[ingredient.IngredientID] += ingredient.Quantity * float64(item.Quantity)
-		}
-	}
-
-	for ingredientID, needed := range requiredIngredients {
-		invItem, err := s.InventoryService.GetInventoryItemById(ctx, ingredientID)
-		if err != nil {
-			return "", errors.New("inventory item not found: " + ingredientID)
-		}
-		if invItem.Quantity < needed {
-			return "", errors.New("insufficient stock for ingredient: " + ingredientID)
-		}
-	}
-
-	for ingredientID, needed := range requiredIngredients {
-		invItem, _ := s.InventoryService.GetInventoryItemById(ctx, ingredientID)
-		invItem.Quantity -= needed
-		if err := s.InventoryService.UpdateInventoryItemById(ctx, ingredientID, invItem); err != nil {
-			return "", errors.New("failed to update inventory for ingredient: " + ingredientID)
-		}
-	}
+	const op = "service.CreateOrder"
 
 	order.Status = "open"
 	order.CreatedAt = time.Now().Format(time.RFC3339)
 
 	orderID, err := s.OrderRepo.CreateOrder(ctx, order)
 	if err != nil {
-		return "", errors.New("failed to create order")
+		return "", fmt.Errorf("%s: failed to create order, %w", op, err)
 	}
 
 	return orderID, nil
+}
 
-}
 func (s *OrderService) GetAllOrders(ctx context.Context) ([]models.Order, error) {
-	return s.OrderRepo.GetAllOrders(ctx)
-}
-func (s *OrderService) GetOrderById(ctx context.Context, OrderId string) (models.Order, error) {
-	return s.OrderRepo.GetOrderById(ctx, OrderId)
-}
-func (s *OrderService) UpdateOrderById(ctx context.Context, OrderId string, order models.Order) error {
-	if order.CustomerName == "" {
-		return errors.New("customer name is required")
-	}
-	if len(order.Items) == 0 {
-		return errors.New("order must have at least one item")
-	}
-	return s.OrderRepo.UpdateOrderById(ctx, OrderId, order)
-}
-func (s *OrderService) DeleteOrderById(ctx context.Context, OrderId string) error {
-	return s.OrderRepo.DeleteOrderById(ctx, OrderId)
-}
-func (s *OrderService) CloseOrderById(ctx context.Context, OrderId string) error {
-	order, err := s.OrderRepo.GetOrderById(ctx, OrderId)
+	const op = "service.GetAllOrders"
+
+	orders, err := s.OrderRepo.GetAllOrders(ctx)
 	if err != nil {
-		return errors.New("order not found")
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return orders, nil
+}
+
+func (s *OrderService) GetOrderById(ctx context.Context, orderId string) (models.Order, error) {
+	const op = "service.GetOrderById"
+
+	order, err := s.OrderRepo.GetOrderById(ctx, orderId)
+	if err != nil {
+		return models.Order{}, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return order, nil
+}
+
+func (s *OrderService) UpdateOrderById(ctx context.Context, orderId string, order models.Order) error {
+	const op = "service.UpdateOrderById"
+
+	err := s.OrderRepo.UpdateOrderById(ctx, orderId, order)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (s *OrderService) DeleteOrderById(ctx context.Context, orderId string) error {
+	const op = "service.DeleteOrderById"
+
+	err := s.OrderRepo.DeleteOrderById(ctx, orderId)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (s *OrderService) CloseOrderById(ctx context.Context, orderId string) error {
+	const op = "service.CloseOrderById"
+
+	order, err := s.OrderRepo.GetOrderById(ctx, orderId)
+	if err != nil {
+		return fmt.Errorf("%s: order not found: %s, %w", op, orderId, err)
 	}
 
 	if order.Status == "closed" {
-		return errors.New("order already closed")
+		return fmt.Errorf("%s: order already closed: %s", op, orderId)
 	}
 
 	for _, item := range order.Items {
 		menuItem, err := s.MenuService.GetMenuItemById(ctx, item.ProductID)
 		if err != nil {
-			return errors.New("menu item not found")
+			return fmt.Errorf("%s: %s, %w", op, item.ProductID, err)
 		}
 
 		for _, ingredient := range menuItem.Ingredients {
 			if !s.InventoryService.HasSufficientStock(ctx, ingredient.IngredientID, ingredient.Quantity*float64(item.Quantity)) {
-				return errors.New("insufficient stock for ingredient: " + ingredient.IngredientID)
+				return fmt.Errorf("%s: insufficient stock for ingredient: %s", op, ingredient.IngredientID)
 			}
 		}
 	}
@@ -124,11 +113,16 @@ func (s *OrderService) CloseOrderById(ctx context.Context, OrderId string) error
 		for _, ingredient := range menuItem.Ingredients {
 			err = s.InventoryService.DeductStock(ctx, ingredient.IngredientID, ingredient.Quantity*float64(item.Quantity))
 			if err != nil {
-				return err
+				return fmt.Errorf("%s: failed to deduct stock for ingredient: %s, %w", op, ingredient.IngredientID, err)
 			}
 		}
 	}
 
 	order.Status = "closed"
-	return s.OrderRepo.UpdateOrderById(ctx, OrderId, order)
+	err = s.OrderRepo.UpdateOrderById(ctx, orderId, order)
+	if err != nil {
+		return fmt.Errorf("%s: failed to update order status, %w", op, err)
+	}
+
+	return nil
 }

@@ -30,57 +30,87 @@ func (h *AuthHandler) RegisterEndpoints(mux *http.ServeMux) {
 }
 
 func (h *AuthHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
-	// load user from request
-	var userPayload models.UserLoginPayload
-	if err := utils.ParseJSON(r, &userPayload); err != nil {
+	// Parse form values
+	if err := r.ParseForm(); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	//validate the payload
-	if userPayload.Email == "" {
+
+	// Load user from request
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+
+	// Validate the payload
+	if email == "" {
 		utils.WriteError(w, http.StatusBadRequest, errors.New("empty email"))
+		return
 	}
-	if userPayload.Password == "" {
+	if password == "" {
 		utils.WriteError(w, http.StatusBadRequest, errors.New("empty password"))
+		return
 	}
-	// get the token from service
-	// handle errors better here
+
+	// Create userPayload for service call
+	userPayload := models.UserLoginPayload{
+		Email:    email,
+		Password: password,
+	}
+
+	// Get the token from service
 	token, err := h.Service.LoginUser(r.Context(), userPayload)
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, err)
 		return
 	}
-	//send token back
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"token": token})
 
+	// Send token back
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"token": token})
 }
 
 func (h *AuthHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
-	// load user from request
-	var userPayload models.RegisterUserPayload
-	if err := utils.ParseJSON(r, &userPayload); err != nil {
+	// Parse form values
+	if err := r.ParseForm(); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	//validate the payload
-	if userPayload.Email == "" {
+
+	// Load user from request
+	email := r.FormValue("email")
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+
+	// Validate the payload
+	if email == "" {
 		utils.WriteError(w, http.StatusBadRequest, errors.New("empty email"))
+		return
 	}
-	if userPayload.Username == "" {
+	if username == "" {
 		utils.WriteError(w, http.StatusBadRequest, errors.New("empty username"))
+		return
 	}
-	if userPayload.Password == "" {
+	if password == "" {
 		utils.WriteError(w, http.StatusBadRequest, errors.New("empty password"))
+		return
 	}
-	// start registering user
+
+	// Create userPayload for service call
+	userPayload := models.RegisterUserPayload{
+		Email:    email,
+		Username: username,
+		Password: password,
+	}
+
+	// Start registering user
 	userId, err := h.Service.RegisterUser(r.Context(), userPayload)
 	if err != nil {
 		if errors.Is(err, service.ErrAlreadyExists) {
 			utils.WriteError(w, http.StatusConflict, errors.New("user with this email already exists"))
+			return
 		}
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
+
 	h.logger.Info("successfully registered user", slog.String("user id", userId))
 	utils.WriteJSON(w, http.StatusCreated, map[string]string{"message": "user created successfully"})
 }

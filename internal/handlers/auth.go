@@ -47,7 +47,7 @@ func (h *AuthHandler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	// handle errors better here
 	token, err := h.Service.LoginUser(r.Context(), userPayload)
 	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, err)
+		utils.WriteError(w, http.StatusUnauthorized, errors.New("failed to login"))
 		return
 	}
 	//send token back
@@ -78,7 +78,7 @@ func (h *AuthHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, service.ErrAlreadyExists) {
 			utils.WriteError(w, http.StatusConflict, errors.New("user with this email already exists"))
 		}
-		utils.WriteError(w, http.StatusInternalServerError, err)
+		utils.WriteError(w, http.StatusInternalServerError, errors.New("failed to register user"))
 		return
 	}
 	h.logger.Info("successfully registered user", slog.String("user id", userId))

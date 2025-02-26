@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"cofee-shop-mongo/internal/auth"
 	"cofee-shop-mongo/internal/utils"
 	"cofee-shop-mongo/models"
 	"context"
@@ -42,8 +43,8 @@ func (h *OrderHandler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /orders/{id}", h.DeleteOrderById)
 	mux.HandleFunc("DELETE /orders/{id}/", h.DeleteOrderById)
 
-	mux.HandleFunc("POST /orders/{id}/close", h.CloseOrderById)
-	mux.HandleFunc("POST /orders/{id}/close/", h.CloseOrderById)
+	mux.HandleFunc("POST /orders/{id}/close", auth.WithJWTAuth(models.StaffAccess, h.CloseOrderById))
+	mux.HandleFunc("POST /orders/{id}/close/", auth.WithJWTAuth(models.StaffAccess, h.CloseOrderById))
 }
 
 func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
@@ -51,6 +52,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	err := utils.ParseJSON(r, &order)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	_, err = h.Service.CreateOrder(r.Context(), order)

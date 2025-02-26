@@ -3,6 +3,7 @@ package service
 import (
 	"cofee-shop-mongo/internal/auth"
 	"cofee-shop-mongo/internal/config"
+	"cofee-shop-mongo/internal/repository"
 	"cofee-shop-mongo/internal/utils"
 	"errors"
 	"fmt"
@@ -58,7 +59,8 @@ func (s *AuthService) RegisterUser(ctx context.Context, payload models.RegisterU
 	_, err := s.Repo.GetUserByEmail(ctx, payload.Email)
 	if err == nil {
 		return "", ErrAlreadyExists
-	} else if !errors.Is(err, mongo.ErrNoDocuments) {
+	} else if !errors.Is(err, repository.ErrNotFound) {
+		fmt.Println("sdaf")
 		return "", fmt.Errorf("%s: failed to check existing user: %w", op, err)
 	}
 

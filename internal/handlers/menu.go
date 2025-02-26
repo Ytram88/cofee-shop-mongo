@@ -33,11 +33,11 @@ func (h *MenuHandler) RegisterEndpoints(mux *http.ServeMux) {
 	mux.HandleFunc("POST /menu", auth.WithJWTAuth(models.StaffAccess, h.createMenuItem))
 	mux.HandleFunc("POST /menu/", auth.WithJWTAuth(models.StaffAccess, h.createMenuItem))
 
-	mux.HandleFunc("GET /menu", auth.WithJWTAuth(models.StaffAccess, h.getAllMenuItems))
-	mux.HandleFunc("GET /menu/", auth.WithJWTAuth(models.StaffAccess, h.getAllMenuItems))
+	mux.HandleFunc("GET /menu", h.getAllMenuItems)
+	mux.HandleFunc("GET /menu/", h.getAllMenuItems)
 
-	mux.HandleFunc("GET /menu/{id}", auth.WithJWTAuth(models.StaffAccess, h.getMenuItemById))
-	mux.HandleFunc("GET /menu/{id}/", auth.WithJWTAuth(models.StaffAccess, h.getMenuItemById))
+	mux.HandleFunc("GET /menu/{id}", h.getMenuItemById)
+	mux.HandleFunc("GET /menu/{id}/", h.getMenuItemById)
 
 	mux.HandleFunc("PUT /menu/{id}", auth.WithJWTAuth(models.StaffAccess, h.updateMenuItemById))
 	mux.HandleFunc("PUT /menu/{id}/", auth.WithJWTAuth(models.StaffAccess, h.updateMenuItemById))
@@ -58,6 +58,7 @@ func (h *MenuHandler) createMenuItem(w http.ResponseWriter, r *http.Request) {
 	err = validateMenuItem(item)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	id, err := h.Service.CreateMenuItem(r.Context(), item)
@@ -90,11 +91,12 @@ func (h *MenuHandler) getMenuItemById(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, repository.ErrNotFound) {
 			h.Logger.Error("Menu item not found", "id", id, "error", err)
 			utils.WriteError(w, http.StatusNotFound, fmt.Errorf("menu item \"%s\" not found", id))
+			return
 		} else {
 			h.Logger.Error("Failed to fetch menu item", "id", id, "error", err)
 			utils.WriteError(w, http.StatusInternalServerError, errors.New("could not retrieve menu item, please try again later"))
+			return
 		}
-		return
 	}
 
 	h.Logger.Info("Fetched menu item", "id", id)
@@ -117,9 +119,11 @@ func (h *MenuHandler) updateMenuItemById(w http.ResponseWriter, r *http.Request)
 	}
 	if updatedItem.ProductId != id {
 		utils.WriteError(w, http.StatusBadRequest, errors.New("you cant change ProductId"))
+		return
 	}
 	if err = validateMenuItem(updatedItem); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	err = h.Service.UpdateMenuItemById(r.Context(), id, updatedItem)

@@ -92,6 +92,7 @@ func (h *InventoryHandler) getInventoryItemById(w http.ResponseWriter, r *http.R
 		if errors.Is(err, repository.ErrNotFound) {
 			h.Logger.Error("Inventory item not found", "id", id, "error", err)
 			utils.WriteError(w, http.StatusNotFound, fmt.Errorf("inventory item \"%s\" not found", id))
+			return
 		} else {
 			h.Logger.Error("Failed to fetch inventory item", "id", id, "error", err)
 			utils.WriteError(w, http.StatusNotFound, errors.New("inventory item not found"))
@@ -119,6 +120,7 @@ func (h *InventoryHandler) updateInventoryItemById(w http.ResponseWriter, r *htt
 	}
 	if updatedItem.IngredientID != id {
 		utils.WriteError(w, http.StatusBadRequest, errors.New("you cant change inventoryID"))
+		return
 	}
 	if err := validateInventoryItem(updatedItem); err != nil {
 		h.Logger.Warn("Inventory item validation failed", "error", err)
@@ -150,6 +152,7 @@ func (h *InventoryHandler) deleteInventoryItemById(w http.ResponseWriter, r *htt
 		if errors.Is(err, repository.ErrNotFound) {
 			h.Logger.Error("Inventory item not found", "id", id, "error", err)
 			utils.WriteError(w, http.StatusNotFound, fmt.Errorf("inventory item \"%s\" not found", id))
+			return
 		} else {
 			h.Logger.Error("Failed to delete inventory item", "id", id, "error", err)
 			utils.WriteError(w, http.StatusInternalServerError, errors.New("could not delete inventory item, please try again later"))

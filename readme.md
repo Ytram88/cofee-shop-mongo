@@ -37,18 +37,20 @@ Create a `.env` file:
 ```env
 MONGO_USER="cofeeStaff"
 MONGO_PASSWORD="cofeeAdmin"
+JWT_SECRET="secretJWT123"
+JWT_EXPIRATION_IN_SECONDS=60*120
 ```
 
 ### Run Application
 
 ```sh
-go run ./cmd/nyapp/.
+go run ./cmd/myapp/.
 ```
 
 or if you dont have go installed, use binary in the repository
 
 ```sh
-./app
+docker run -e {envs here}
 ```
 
 ---
